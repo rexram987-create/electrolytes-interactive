@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const ions = [
@@ -23,7 +23,8 @@ const ions = [
     life: "1778–1829",
     year: "1807",
     place: "המוסד המלכותי, לונדון, אנגליה",
-    discovery: "דייבי בודד נתרן מתכתי בעזרת אלקטרוליזה של נתרן הידרוקסידי מותך, חומר שנקרא אז caustic soda. הזרם החשמלי פירק את התרכובת ואפשר לקבל את המתכת החופשית."
+    discovery: "דייבי בודד נתרן מתכתי בעזרת אלקטרוליזה של נתרן הידרוקסידי מותך, חומר שנקרא אז caustic soda. הזרם החשמלי פירק את התרכובת ואפשר לקבל את המתכת החופשית.",
+    visual: "היון Na⁺ הוא אטום נתרן שאיבד אלקטרון אחד ולכן נושא מטען חיובי. בגוף הוא נע בנוזלים ולא נראה בעין רגילה."
   },
   {
     id: "potassium",
@@ -46,15 +47,26 @@ const ions = [
     life: "1778–1829",
     year: "1807",
     place: "המוסד המלכותי, לונדון, אנגליה",
-    discovery: "דייבי בודד אשלגן בעזרת אלקטרוליזה של אשלגן הידרוקסידי מותך, שנקרא אז caustic potash. זה היה אחד המקרים הראשונים שבהם מתכת בודדה באמצעות אלקטרוליזה."
+    discovery: "דייבי בודד אשלגן בעזרת אלקטרוליזה של אשלגן הידרוקסידי מותך, שנקרא אז caustic potash. זה היה אחד המקרים הראשונים שבהם מתכת בודדה באמצעות אלקטרוליזה.",
+    visual: "היון K⁺ הוא אטום אשלגן שאיבד אלקטרון אחד. רוב האשלגן בגוף נמצא בתוך התאים, ולכן הוא חשוב מאוד לפעילות החשמלית שלהם."
   }
 ];
 
-function InfoBlock({ title, children }) {
+function playClick() {
+  try {
+    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
+    audio.volume = 0.18;
+    audio.play().catch(() => {});
+  } catch {
+    // Sound is optional.
+  }
+}
+
+function InfoBlock({ title, children, light }) {
   return (
-    <div className="rounded-3xl bg-white/10 border border-white/10 p-5">
+    <div className={`rounded-3xl border p-5 ${light ? "bg-slate-100 border-slate-200" : "bg-white/10 border-white/10"}`}>
       <h3 className="font-black text-xl mb-2">{title}</h3>
-      <div className="text-white/75 leading-8">{children}</div>
+      <div className={`${light ? "text-slate-700" : "text-white/75"} leading-8`}>{children}</div>
     </div>
   );
 }
@@ -62,65 +74,83 @@ function InfoBlock({ title, children }) {
 export default function App() {
   const [selected, setSelected] = useState(ions[0]);
   const [tab, setTab] = useState("role");
+  const [dark, setDark] = useState(true);
+  const [fontScale, setFontScale] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const firstRun = useRef(true);
+
+  const light = !dark;
+  const pageClass = dark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-950";
+  const cardClass = dark ? "bg-white/10 border-white/15" : "bg-white border-slate-200 shadow-xl";
+  const muted = dark ? "text-white/70" : "text-slate-700";
+
+  const facts = useMemo(() => [
+    ["איזון הוא העיקר", "לא תמיד ‘יותר’ הוא טוב. הגוף צריך טווח מאוזן של אלקטרוליטים."],
+    ["הכליות מנהלות את המערכת", "הכליות מסננות, שומרות או מפרישות אלקטרוליטים לפי צורכי הגוף."],
+    ["ספורט והתייבשות משפיעים", "הזעה, שלשולים, הקאות או שתייה לא מאוזנת יכולים לשנות את הרמות."],
+  ], []);
+
+  const chooseIon = (ion) => {
+    setSelected(ion);
+    setTab("role");
+    if (!firstRun.current) playClick();
+    firstRun.current = false;
+  };
+
+  const shareSite = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: "אלקטרוליטים", url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+      }
+    } catch {
+      setCopied(false);
+    }
+  };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-white p-6 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
-        <motion.header
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-10"
-        >
-          <div className="inline-flex rounded-full bg-white/10 border border-white/15 px-4 py-2 mb-5">
-            אתר לימודי אינטראקטיבי ⚡
+    <div dir="rtl" className={`min-h-screen p-6 overflow-hidden ${pageClass}`} style={{ fontSize: `${fontScale}rem` }}>
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl" />
+        <div className="absolute bottom-0 -left-32 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
+      </div>
+
+      <div className="relative max-w-6xl mx-auto">
+        <div className={`sticky top-3 z-30 mb-8 rounded-3xl border ${cardClass} backdrop-blur-xl p-3 flex flex-wrap gap-2 items-center justify-between`}>
+          <div className="font-black">⚡ אלקטרוליטים</div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setDark(!dark)} className="rounded-full px-4 py-2 bg-blue-600 text-white font-bold">{dark ? "מצב בהיר" : "מצב כהה"}</button>
+            <button onClick={shareSite} className="rounded-full px-4 py-2 bg-purple-600 text-white font-bold">{copied ? "הועתק!" : "שתף"}</button>
+            <button onClick={() => setFontScale((v) => Math.min(1.25, Number((v + 0.05).toFixed(2))))} className="rounded-full px-4 py-2 bg-emerald-600 text-white font-bold">A+</button>
+            <button onClick={() => setFontScale((v) => Math.max(0.9, Number((v - 0.05).toFixed(2))))} className="rounded-full px-4 py-2 bg-rose-600 text-white font-bold">A-</button>
           </div>
+        </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black mb-4">
-            אלקטרוליטים
-          </h1>
-
-          <p className="text-white/70 text-lg leading-8 max-w-3xl mx-auto">
-            אלקטרוליטים הם מינרלים בעלי מטען חשמלי. כאשר הם מומסים בנוזלי הגוף,
-            הם מתפרקים ליונים ומאפשרים פעילות חשמלית חיונית בעצבים, בשרירים,
-            בלב ובמערכת מאזן הנוזלים.
+        <motion.header initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10">
+          <div className={`inline-flex rounded-full border px-4 py-2 mb-5 ${cardClass}`}>אתר לימודי אינטראקטיבי ⚡</div>
+          <h1 className="text-4xl sm:text-6xl font-black mb-4">אלקטרוליטים</h1>
+          <p className={`${muted} text-lg leading-8 max-w-3xl mx-auto`}>
+            אלקטרוליטים הם מינרלים בעלי מטען חשמלי. כאשר הם מומסים בנוזלי הגוף, הם מתפרקים ליונים ומאפשרים פעילות חשמלית חיונית בעצבים, בשרירים, בלב ובמערכת מאזן הנוזלים.
           </p>
         </motion.header>
 
-        <section className="rounded-[2rem] bg-white/10 border border-white/15 p-6 sm:p-8 mb-10">
-          <h2 className="text-3xl font-black mb-4">
-            מה פירוש המילה “אלקטרוליט”?
-          </h2>
-
-          <p className="text-white/75 leading-8 mb-4">
-            המילה Electrolyte מורכבת מרעיון של חשמל ופירוק:
-          </p>
-
-          <ul className="text-white/75 leading-8 list-disc pr-6 space-y-2">
+        <section className={`rounded-[2rem] border p-6 sm:p-8 mb-10 ${cardClass}`}>
+          <h2 className="text-3xl font-black mb-4">מה פירוש המילה “אלקטרוליט”?</h2>
+          <p className={`${muted} leading-8 mb-4`}>המילה Electrolyte מורכבת מרעיון של חשמל ופירוק:</p>
+          <ul className={`${muted} leading-8 list-disc pr-6 space-y-2`}>
             <li><b>Electro</b> — קשור לחשמל.</li>
             <li><b>Lyte / Lysis</b> — קשור לפירוק, המסה או התפרקות לחלקים.</li>
           </ul>
-
-          <p className="text-white/75 leading-8 mt-4">
-            לכן אלקטרוליט הוא חומר שמתמוסס ומתפרק ליונים, והיונים האלה מסוגלים
-            להוליך זרם חשמלי.
-          </p>
+          <p className={`${muted} leading-8 mt-4`}>לכן אלקטרוליט הוא חומר שמתמוסס ומתפרק ליונים, והיונים האלה מסוגלים להוליך זרם חשמלי.</p>
         </section>
 
         <div className="flex justify-center gap-6 mb-10">
-          {ions.map((ion) => (
-            <motion.button
-              key={ion.id}
-              onClick={() => {
-                setSelected(ion);
-                setTab("role");
-              }}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.94 }}
-              className={`rounded-full p-1 ${
-                selected.id === ion.id ? "ring-4 ring-white/80" : ""
-              }`}
-            >
-              <div className={`h-28 w-28 rounded-full bg-gradient-to-br ${ion.color} flex flex-col items-center justify-center shadow-2xl`}>
+          {ions.map((ion, index) => (
+            <motion.button key={ion.id} onClick={() => chooseIon(ion)} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} animate={{ y: [0, -8, 0] }} transition={{ duration: 2.5 + index * 0.25, repeat: Infinity }} className={`rounded-full p-1 ${selected.id === ion.id ? "ring-4 ring-white/80" : ""}`}>
+              <div className={`h-28 w-28 rounded-full bg-gradient-to-br ${ion.color} flex flex-col items-center justify-center shadow-2xl text-white`}>
                 <div className="text-3xl">{ion.emoji}</div>
                 <div className="text-2xl font-black">{ion.symbol}</div>
                 <div className="text-sm font-bold">{ion.name}</div>
@@ -130,128 +160,32 @@ export default function App() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-6">
-          {[
-            ["role", "תפקיד"],
-            ["balance", "חוסר / עודף"],
-            ["etymology", "אטימולוגיה"],
-            ["discovery", "גילוי"]
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`rounded-full px-5 py-2 font-bold transition ${
-                tab === key
-                  ? "bg-white text-slate-950"
-                  : "bg-white/10 text-white hover:bg-white/20"
-              }`}
-            >
-              {label}
-            </button>
+          {[["role", "תפקיד"], ["balance", "חוסר / עודף"], ["visual", "איך נראה?"], ["etymology", "אטימולוגיה"], ["discovery", "גילוי"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} className={`rounded-full px-5 py-2 font-bold transition ${tab === key ? "bg-white text-slate-950" : dark ? "bg-white/10 text-white hover:bg-white/20" : "bg-slate-200 text-slate-900 hover:bg-slate-300"}`}>{label}</button>
           ))}
         </div>
 
         <AnimatePresence mode="wait">
-          <motion.section
-            key={selected.id + tab}
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.35 }}
-            className="rounded-[2rem] bg-white/10 border border-white/15 p-6 sm:p-8 shadow-2xl"
-          >
-            <div className={`inline-flex rounded-3xl bg-gradient-to-br ${selected.color} p-5 mb-5 text-4xl`}>
-              {selected.emoji}
-            </div>
+          <motion.section key={selected.id + tab} initial={{ opacity: 0, x: 40, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -40, scale: 0.98 }} transition={{ duration: 0.35 }} className={`rounded-[2rem] border p-6 sm:p-8 shadow-2xl ${cardClass}`}>
+            <div className={`inline-flex rounded-3xl bg-gradient-to-br ${selected.color} p-5 mb-5 text-4xl text-white`}>{selected.emoji}</div>
+            <h2 className="text-3xl font-black mb-2">{selected.name} <span className={dark ? "text-white/50" : "text-slate-500"}>{selected.symbol}</span></h2>
+            <p className={dark ? "text-white/50 mb-6" : "text-slate-500 mb-6"}>{selected.location}</p>
 
-            <h2 className="text-3xl font-black mb-2">
-              {selected.name} <span className="text-white/50">{selected.symbol}</span>
-            </h2>
-
-            <p className="text-white/50 mb-6">
-              {selected.location}
-            </p>
-
-            {tab === "role" && (
-              <div className="grid md:grid-cols-2 gap-5">
-                <InfoBlock title="תפקיד בגוף">
-                  {selected.role}
-                </InfoBlock>
-
-                <InfoBlock title="למה זה חשוב?">
-                  {selected.importance}
-                </InfoBlock>
-              </div>
-            )}
-
-            {tab === "balance" && (
-              <div className="grid md:grid-cols-2 gap-5">
-                <InfoBlock title="כאשר יש חוסר">
-                  {selected.low}
-                </InfoBlock>
-
-                <InfoBlock title="כאשר יש עודף">
-                  {selected.high}
-                </InfoBlock>
-              </div>
-            )}
-
-            {tab === "etymology" && (
-              <InfoBlock title="ניתוח אטימולוגי">
-                <ul className="list-disc pr-6 space-y-2">
-                  {selected.etymology.map((line, index) => (
-                    <li key={index}>{line}</li>
-                  ))}
-                </ul>
-              </InfoBlock>
-            )}
-
-            {tab === "discovery" && (
-              <div className="grid md:grid-cols-2 gap-5">
-                <InfoBlock title="שם המגלה">
-                  {selected.discoverer}
-                </InfoBlock>
-
-                <InfoBlock title="שנות החיים">
-                  {selected.life}
-                </InfoBlock>
-
-                <InfoBlock title="שנת הגילוי">
-                  {selected.year}
-                </InfoBlock>
-
-                <InfoBlock title="מקום הגילוי">
-                  {selected.place}
-                </InfoBlock>
-
-                <div className="md:col-span-2">
-                  <InfoBlock title="נסיבות הגילוי">
-                    {selected.discovery}
-                  </InfoBlock>
-                </div>
-              </div>
-            )}
+            {tab === "role" && <div className="grid md:grid-cols-2 gap-5"><InfoBlock light={light} title="תפקיד בגוף">{selected.role}</InfoBlock><InfoBlock light={light} title="למה זה חשוב?">{selected.importance}</InfoBlock></div>}
+            {tab === "balance" && <div className="grid md:grid-cols-2 gap-5"><InfoBlock light={light} title="כאשר יש חוסר">{selected.low}</InfoBlock><InfoBlock light={light} title="כאשר יש עודף">{selected.high}</InfoBlock></div>}
+            {tab === "visual" && <InfoBlock light={light} title="מראה ברמה האטומית">{selected.visual}</InfoBlock>}
+            {tab === "etymology" && <InfoBlock light={light} title="ניתוח אטימולוגי"><ul className="list-disc pr-6 space-y-2">{selected.etymology.map((line, index) => <li key={index}>{line}</li>)}</ul></InfoBlock>}
+            {tab === "discovery" && <div className="grid md:grid-cols-2 gap-5"><InfoBlock light={light} title="שם המגלה">{selected.discoverer}</InfoBlock><InfoBlock light={light} title="שנות החיים">{selected.life}</InfoBlock><InfoBlock light={light} title="שנת הגילוי">{selected.year}</InfoBlock><InfoBlock light={light} title="מקום הגילוי">{selected.place}</InfoBlock><div className="md:col-span-2"><InfoBlock light={light} title="נסיבות הגילוי">{selected.discovery}</InfoBlock></div></div>}
           </motion.section>
         </AnimatePresence>
 
         <section className="mt-10 rounded-[2rem] bg-gradient-to-br from-cyan-400/20 to-purple-500/20 border border-white/15 p-6 sm:p-8">
-          <h2 className="text-3xl font-black mb-5">
-            דברים חשובים שכדאי לזכור
-          </h2>
-
+          <h2 className="text-3xl font-black mb-5">דברים חשובים שכדאי לזכור</h2>
           <div className="grid md:grid-cols-3 gap-5">
-            <InfoBlock title="איזון הוא העיקר">
-              לא תמיד “יותר” הוא טוב. הגוף צריך טווח מאוזן של אלקטרוליטים.
-            </InfoBlock>
-
-            <InfoBlock title="הכליות מנהלות את המערכת">
-              הכליות מסננות, שומרות או מפרישות אלקטרוליטים לפי צורכי הגוף.
-            </InfoBlock>
-
-            <InfoBlock title="ספורט והתייבשות משפיעים">
-              הזעה, שלשולים, הקאות או שתייה לא מאוזנת יכולים לשנות את הרמות.
-            </InfoBlock>
+            {facts.map(([title, text]) => <InfoBlock key={title} light={light} title={title}>{text}</InfoBlock>)}
           </div>
         </section>
       </div>
     </div>
   );
+}
