@@ -54,9 +54,21 @@ const ions = [
 
 function playClick() {
   try {
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
-    audio.volume = 0.18;
-    audio.play().catch(() => {});
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const context = new AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.16);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.17);
   } catch {
     // Sound is optional.
   }
@@ -83,6 +95,7 @@ export default function App() {
   const pageClass = dark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-950";
   const cardClass = dark ? "bg-white/10 border-white/15" : "bg-white border-slate-200 shadow-xl";
   const muted = dark ? "text-white/70" : "text-slate-700";
+  const textSizeClass = fontScale === 0 ? "text-base" : fontScale === 1 ? "text-lg" : "text-xl";
 
   const facts = useMemo(() => [
     ["איזון הוא העיקר", "לא תמיד ‘יותר’ הוא טוב. הגוף צריך טווח מאוזן של אלקטרוליטים."],
@@ -93,12 +106,13 @@ export default function App() {
   const chooseIon = (ion) => {
     setSelected(ion);
     setTab("role");
-    if (!firstRun.current) playClick();
+    playClick();
     firstRun.current = false;
   };
 
   const shareSite = async () => {
     const url = window.location.href;
+    playClick();
     try {
       if (navigator.share) await navigator.share({ title: "אלקטרוליטים", url });
       else {
@@ -111,8 +125,16 @@ export default function App() {
     }
   };
 
+  const changeTextSize = (direction) => {
+    playClick();
+    setFontScale((value) => {
+      if (direction === "up") return Math.min(2, value + 1);
+      return Math.max(0, value - 1);
+    });
+  };
+
   return (
-    <div dir="rtl" className={`min-h-screen p-6 overflow-hidden ${pageClass}`} style={{ fontSize: `${fontScale}rem` }}>
+    <div dir="rtl" className={`min-h-screen p-6 overflow-hidden ${pageClass} ${textSizeClass}`}>
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl" />
         <div className="absolute bottom-0 -left-32 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
@@ -122,17 +144,17 @@ export default function App() {
         <div className={`sticky top-3 z-30 mb-8 rounded-3xl border ${cardClass} backdrop-blur-xl p-3 flex flex-wrap gap-2 items-center justify-between`}>
           <div className="font-black">⚡ אלקטרוליטים</div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setDark(!dark)} className="rounded-full px-4 py-2 bg-blue-600 text-white font-bold">{dark ? "מצב בהיר" : "מצב כהה"}</button>
+            <button onClick={() => { playClick(); setDark(!dark); }} className="rounded-full px-4 py-2 bg-blue-600 text-white font-bold">{dark ? "מצב בהיר" : "מצב כהה"}</button>
             <button onClick={shareSite} className="rounded-full px-4 py-2 bg-purple-600 text-white font-bold">{copied ? "הועתק!" : "שתף"}</button>
-            <button onClick={() => setFontScale((v) => Math.min(1.25, Number((v + 0.05).toFixed(2))))} className="rounded-full px-4 py-2 bg-emerald-600 text-white font-bold">A+</button>
-            <button onClick={() => setFontScale((v) => Math.max(0.9, Number((v - 0.05).toFixed(2))))} className="rounded-full px-4 py-2 bg-rose-600 text-white font-bold">A-</button>
+            <button onClick={() => changeTextSize("up")} className="rounded-full px-4 py-2 bg-emerald-600 text-white font-bold">A+</button>
+            <button onClick={() => changeTextSize("down")} className="rounded-full px-4 py-2 bg-rose-600 text-white font-bold">A-</button>
           </div>
         </div>
 
         <motion.header initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10">
           <div className={`inline-flex rounded-full border px-4 py-2 mb-5 ${cardClass}`}>אתר לימודי אינטראקטיבי ⚡</div>
           <h1 className="text-4xl sm:text-6xl font-black mb-4">אלקטרוליטים</h1>
-          <p className={`${muted} text-lg leading-8 max-w-3xl mx-auto`}>
+          <p className={`${muted} leading-8 max-w-3xl mx-auto`}>
             אלקטרוליטים הם מינרלים בעלי מטען חשמלי. כאשר הם מומסים בנוזלי הגוף, הם מתפרקים ליונים ומאפשרים פעילות חשמלית חיונית בעצבים, בשרירים, בלב ובמערכת מאזן הנוזלים.
           </p>
         </motion.header>
@@ -161,7 +183,7 @@ export default function App() {
 
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           {[["role", "תפקיד"], ["balance", "חוסר / עודף"], ["visual", "איך נראה?"], ["etymology", "אטימולוגיה"], ["discovery", "גילוי"]].map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} className={`rounded-full px-5 py-2 font-bold transition ${tab === key ? "bg-white text-slate-950" : dark ? "bg-white/10 text-white hover:bg-white/20" : "bg-slate-200 text-slate-900 hover:bg-slate-300"}`}>{label}</button>
+            <button key={key} onClick={() => { playClick(); setTab(key); }} className={`rounded-full px-5 py-2 font-bold transition ${tab === key ? "bg-white text-slate-950" : dark ? "bg-white/10 text-white hover:bg-white/20" : "bg-slate-200 text-slate-900 hover:bg-slate-300"}`}>{label}</button>
           ))}
         </div>
 
