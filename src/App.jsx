@@ -42,6 +42,7 @@ export default function App() {
   const [fontScale, setFontScale] = useState(1);
   const [copied, setCopied] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showBigPhoto, setShowBigPhoto] = useState(false);
 
   const selected = t.ions.find((ion) => ion.id === selectedId) || t.ions[0];
   const light = !dark;
@@ -87,8 +88,12 @@ export default function App() {
     setFontScale((value) => direction === "up" ? Math.min(2, value + 1) : Math.max(0, value - 1));
   };
 
-  const aboutTitle = lang === "he" ? "אודות" : "About";
-  const aboutText = lang === "he" ? "האתר נבנה על ידי רם בשיתוף ChatGPT" : "This site was built by Ram together with ChatGPT";
+  const aboutTitle = lang === "he" ? "אודות האתר" : "About the site";
+  const aboutPhotoHint = lang === "he" ? "לחץ על התמונה כדי להגדיל" : "Click the photo to enlarge";
+  const aboutText = lang === "he"
+    ? "האתר נבנה על ידי רם בשיתוף ChatGPT, מתוך מטרה להפוך נושא מדעי ורפואי חשוב — אלקטרוליטים — לחוויה לימודית ברורה, יפה ואינטראקטיבית. האתר מציג מידע על תפקידם של יונים מרכזיים בגוף, מצבי חוסר ועודף, אטימולוגיה, גילוי היסטורי והסבר חזותי פשוט."
+    : "This site was built by Ram together with ChatGPT, with the goal of turning an important scientific and medical topic — electrolytes — into a clear, beautiful, and interactive learning experience. It presents the roles of key ions in the body, low and high states, etymology, historical discovery, and simple visual explanations.";
+  const aboutCredit = lang === "he" ? "רעיון, בחירה והובלה: רם. תכנון, קוד ועזרה: ChatGPT." : "Concept, direction, and decisions: Ram. Planning, code, and assistance: ChatGPT.";
   const closeText = lang === "he" ? "סגור" : "Close";
   const footerText = lang === "he" ? "האתר נבנה על ידי ChatGPT ורם" : "Built by ChatGPT and Ram";
 
@@ -175,11 +180,35 @@ export default function App() {
       <AnimatePresence>
         {showAbout && (
           <motion.div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAbout(false)}>
-            <motion.div className={`w-full max-w-md rounded-[2rem] border ${cardClass} p-6 text-center shadow-2xl`} initial={{ scale: 0.85, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.85, y: 30 }} onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-3xl font-black mb-5">{aboutTitle}</h2>
-              <img src="/ram-profile.jpg" alt="Ram profile" className="w-40 h-40 mx-auto rounded-full object-cover border-4 border-white/30 shadow-2xl mb-5" />
-              <p className={`${muted} leading-8 mb-5`}>{aboutText}</p>
-              <button onClick={() => { playClick(); setShowAbout(false); }} className="rounded-full px-6 py-3 bg-rose-600 text-white font-bold">{closeText}</button>
+            <motion.div className={`w-full max-w-3xl rounded-[2rem] border ${cardClass} p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto`} initial={{ scale: 0.85, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.85, y: 30 }} onClick={(e) => e.stopPropagation()}>
+              <div className="grid md:grid-cols-[220px_1fr] gap-6 items-center">
+                <div className="text-center">
+                  <button onClick={() => { playClick(); setShowBigPhoto(true); }} className="group block mx-auto">
+                    <img src="/ram-profile.jpg" alt="Ram profile" className="w-48 h-48 mx-auto rounded-full object-cover border-4 border-white/30 shadow-2xl transition group-hover:scale-105" />
+                  </button>
+                  <div className={`${muted} text-sm mt-3`}>{aboutPhotoHint}</div>
+                </div>
+
+                <div>
+                  <h2 className="text-3xl font-black mb-4">{aboutTitle}</h2>
+                  <p className={`${muted} leading-8 mb-4`}>{aboutText}</p>
+                  <div className={`rounded-3xl border ${light ? "bg-slate-100 border-slate-200" : "bg-white/10 border-white/10"} p-4 ${muted} leading-8`}>
+                    {aboutCredit}
+                  </div>
+                  <button onClick={() => { playClick(); setShowAbout(false); }} className="mt-5 rounded-full px-6 py-3 bg-rose-600 text-white font-bold">{closeText}</button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBigPhoto && (
+          <motion.div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBigPhoto(false)}>
+            <motion.div className="relative" initial={{ scale: 0.85 }} animate={{ scale: 1 }} exit={{ scale: 0.85 }} onClick={(e) => e.stopPropagation()}>
+              <img src="/ram-profile.jpg" alt="Ram profile large" className="max-h-[86vh] max-w-[92vw] rounded-[2rem] object-contain shadow-2xl border border-white/20" />
+              <button onClick={() => { playClick(); setShowBigPhoto(false); }} className="absolute top-3 right-3 rounded-full px-4 py-2 bg-rose-600 text-white font-bold">×</button>
             </motion.div>
           </motion.div>
         )}
